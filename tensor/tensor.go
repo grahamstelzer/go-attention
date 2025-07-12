@@ -31,8 +31,58 @@ type Tensor struct {
 	Device string // "cpu" "gpu" "simd-cpu"
 }
 
+// helper functions
+func numElements(shape []int) int {
+	// return the number of elements needed based on the shape array
+	// (remember we are using flattened 1d array representation)
+	// syntax NOTE: "range" gives all elements in arg (in this case, shape array)
+	size := 1
+	for _, dim := range shape { 
+		size *= dim
+	}
+	return size
+}
+
+func computeStrides(shape []int) []int {
+	/*
+	Takes the input shape array (slice?) and returns the "strides" needed to move along each axis as an array
+	ex: [2, 3, 4] means "2 blocks of 3 by 4 matrices"
+		stored in a single memory block, this means the first of the outermost 2 blocks
+		will start at 0 but the second will start AFTER the 3 by 4 matrix aka AFTER 3 * 4 = 12 items
+	*/
+
+	n := len(shape)
+	strides := make([]int, n) // syntax NOTE: "make" allocates zeroed int slice of length n
+
+	strides[n-1] = 1
+	for i := n - 2; i >= 0; i-- {
+		strides[i] = shape[i+1] * strides[i+1]
+	}
+	return strides
+}
+
+
+
+
 // construction
-func Zeros(shape ...int) *Tensor
+// syntax NOTE: 
+//     we are usually using pointers, {...} is a composite literal, & gets pointer to that value
+func Zeros(shape ...int) *Tensor {
+	// fill Data with 0s
+
+	// get number of elements to create:
+	size := numElements(shape)
+	data := make([]float32, size)
+	return &Tensor {
+		Data: data,
+		Shape: shape,
+		Strides: computeStrides(shape),
+		Offset: 0,
+		Dtype: Float32,
+		Device: "cpu",
+	}
+}
+
 func Ones(shape ...int) *Tensor
 func Empty(shape ...int) *Tensor
 func Random(shape ...int) *Tensor
